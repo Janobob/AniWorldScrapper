@@ -1,10 +1,11 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using System.Collections.ObjectModel;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 
-const string extensionPath = @"C:\Users\janwe\AppData\Local\Google\Chrome\User Data\Default\Extensions\cjpalhdlnbpafiamejdnhcphjbkeiagm\1.56.0_0";
-const string animeUrl = "https://aniworld.to/anime/stream/classroom-of-the-elite/staffel-1/episode-1";
+const string extensionPath = @"C:\Users\janwe\AppData\Local\Google\Chrome\User Data\Default\Extensions\cjpalhdlnbpafiamejdnhcphjbkeiagm\1.57.0_0";
+const string animeUrl = "https://aniworld.to/anime/stream/that-time-i-got-reincarnated-as-a-slime/staffel-3/episode-1";
 
 // Set up the Chrome driver
 var options = new ChromeOptions();
@@ -17,22 +18,45 @@ driver.Url = animeUrl;
 // Sleep to prevent ads
 Thread.Sleep(1000);
 
-var episodeLinks = driver.FindElements(By.CssSelector("[data-episode-id]"));
-var activeEpisode = episodeLinks.IndexOf(episodeLinks.First(e => e.GetAttribute("class").Contains("active")));
+var seasonLinks = GetSeasonLinks();
+var activeSeason = seasonLinks.IndexOf(seasonLinks.FirstOrDefault(x => x.GetAttribute("class").Contains("active")));
 
-for (var episode = activeEpisode; episode < episodeLinks.Count - 1; episode++)
+for(var season = activeSeason; season < seasonLinks.Count; season++)
 {
-	// run
-	GetVideoForEpisode();
+	var episodeLinks = GetEpisodeLinks();
+	var activeEpisode = episodeLinks.IndexOf(episodeLinks.First(e => e.GetAttribute("class").Contains("active")));
 	
-	// get links
-	episodeLinks = driver.FindElements(By.CssSelector("[data-episode-id]"));
-	episodeLinks[episode + 1].Click();
+	for (var episode = activeEpisode; episode < episodeLinks.Count - 1; episode++)
+	{
+		// run
+		// GetVideoForEpisode();
+	
+		// get links
+		episodeLinks = GetEpisodeLinks();
+		episodeLinks[episode + 1].Click();
+	}
+	
+	if(season == seasonLinks.Count - 1)
+		break;
+	seasonLinks = GetSeasonLinks();
+	seasonLinks[season + 1].Click();
+	episodeLinks = GetEpisodeLinks();
+	episodeLinks.First().Click();
 }
 
 driver.Quit();
 
 return;
+
+ReadOnlyCollection<IWebElement> GetEpisodeLinks()
+{
+    return driver.FindElements(By.CssSelector("[data-episode-id]"));
+}
+
+ReadOnlyCollection<IWebElement> GetSeasonLinks()
+{
+    return driver.FindElements(By.CssSelector("#stream > ul:nth-child(1) > li > a"));
+}
 
 void GetVideoForEpisode()
 {
@@ -43,7 +67,7 @@ void GetVideoForEpisode()
 	driver.SwitchTo().Window(driver.WindowHandles.Last());
 	driver.Navigate().GoToUrl(href);
 
-	Thread.Sleep(2000);
+	Thread.Sleep(500);
 
 	driver.FindElement(By.TagName("body")).Click();
 	((IJavaScriptExecutor)driver).ExecuteScript("document.getElementsByClassName('play-overlay')[0].click();");
