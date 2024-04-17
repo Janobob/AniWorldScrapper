@@ -3,12 +3,12 @@ using Microsoft.Extensions.Configuration;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 
-
 // Setup Console Application
 var builder = new ConfigurationBuilder()
 	.SetBasePath(Directory.GetCurrentDirectory())
 	.AddJsonFile("appsettings.json", optional: false)
-	.AddUserSecrets<Program>();
+	.AddUserSecrets<Program>()
+	.AddCommandLine(args);
 var config = builder.Build();
 
 var extensionPath = config.GetValue<string>("SeleniumSettings:ExtensionPath");
