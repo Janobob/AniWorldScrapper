@@ -1,11 +1,21 @@
-﻿// See https://aka.ms/new-console-template for more information
-
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
+using Microsoft.Extensions.Configuration;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 
-const string extensionPath = @"C:\Users\janwe\AppData\Local\Google\Chrome\User Data\Default\Extensions\cjpalhdlnbpafiamejdnhcphjbkeiagm\1.57.0_0";
-const string animeUrl = "https://aniworld.to/anime/stream/that-time-i-got-reincarnated-as-a-slime/staffel-3/episode-1";
+
+// Setup Console Application
+var builder = new ConfigurationBuilder()
+	.SetBasePath(Directory.GetCurrentDirectory())
+	.AddJsonFile("appsettings.json", optional: false)
+	.AddUserSecrets<Program>();
+var config = builder.Build();
+
+var extensionPath = config.GetValue<string>("SeleniumSettings:ExtensionPath");
+var animeUrl = config.GetValue<string>("AnimeSettings:Url");
+
+Console.WriteLine($"Extension Path: {extensionPath}");
+Console.WriteLine($"Anime URL: {animeUrl}");
 
 // Set up the Chrome driver
 var options = new ChromeOptions();
@@ -28,10 +38,10 @@ for(var season = activeSeason; season < seasonLinks.Count; season++)
 	
 	for (var episode = activeEpisode; episode < episodeLinks.Count - 1; episode++)
 	{
-		// run
-		// GetVideoForEpisode();
+		// Run
+		GetVideoForEpisode();
 	
-		// get links
+		// Get links
 		episodeLinks = GetEpisodeLinks();
 		episodeLinks[episode + 1].Click();
 	}
