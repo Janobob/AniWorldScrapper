@@ -6,9 +6,10 @@ public class Renamer
 	{
 		// Directory containing files
 		const string directoryPath = @"\\192.168.1.176\Plex\downloads";
-		const string template = "MASHLE - MAGIC AND MUSCLES S{0:D2}E{1:D2}";
-		var season = 1;
-		var episode = 7;
+		const string animeName = "Durarara!!";
+		const string template = animeName + " S{0:D2}E{1:D2}";
+		var season = 2;
+		var episode = 1;
 
 		try
 		{
