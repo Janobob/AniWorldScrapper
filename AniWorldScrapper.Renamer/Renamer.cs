@@ -5,8 +5,8 @@ public class Renamer
 	public static void Main(string[] args)
 	{
 		// Directory containing files
-		const string directoryPath = @"\\192.168.1.176\Plex\downloads";
-		const string animeName = "Durarara!!";
+		const string directoryPath = @"\\192.168.1.176\Plex\downloads\kono2";
+		const string animeName = "KonoSuba – God’s blessing on this wonderful world!!";
 		const string template = animeName + " S{0:D2}E{1:D2}";
 		var season = 2;
 		var episode = 1;

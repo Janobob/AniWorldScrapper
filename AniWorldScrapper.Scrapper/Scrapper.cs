@@ -1,5 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using Microsoft.Extensions.Configuration;
+using My.JDownloader.Api;
+using My.JDownloader.Api.Models.LinkgrabberV2.Request;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 
@@ -17,6 +19,12 @@ public class Scrapper
 			.AddCommandLine(args);
 		var config = builder.Build();
 
+		var email = config.GetValue<string>("JDownloaderSettings:Email");
+		var password = config.GetValue<string>("JDownloaderSettings:Password");
+		var jdownloader = new JDownloaderHandler(email, password, "crawler");
+		var device = jdownloader.GetDeviceHandler(jdownloader.GetDevices().FirstOrDefault());
+		var grabber = device.LinkgrabberV2;
+
 		var extensionPath = config.GetValue<string>("SeleniumSettings:ExtensionPath");
 		var animeUrl = config.GetValue<string>("AnimeSettings:Url");
 		var switchSeason = config.GetValue<bool>("AnimeSettings:SwitchSeason");
@@ -30,7 +38,6 @@ public class Scrapper
 		options.AddExcludedArguments("excludeSwitches", "enable-logging");
 		var driver = new ChromeDriver(options);
 		driver.Url = animeUrl;
-
 
 		// Sleep to prevent ads
 		Thread.Sleep(1000);
@@ -94,6 +101,13 @@ public class Scrapper
 			control.Click();
 			var video = driver.FindElement(By.TagName("video")).GetAttribute("src");
 			Console.WriteLine(video);
+			grabber.AddLinks(
+				new AddLinkRequest
+				{
+					AutoExtract = true,
+					PackageName = config.GetValue<string>("AnimeSettings:AnimeName"),
+					Links = video
+				});
 
 			driver.Close();
 			driver.SwitchTo().Window(driver.WindowHandles.First());
