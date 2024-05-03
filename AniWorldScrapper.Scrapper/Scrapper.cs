@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using Microsoft.Extensions.Configuration;
 using My.JDownloader.Api;
+using My.JDownloader.Api.Models.DownloadsV2.Request;
 using My.JDownloader.Api.Models.LinkgrabberV2.Request;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
@@ -19,14 +20,17 @@ public class Scrapper
 			.AddCommandLine(args);
 		var config = builder.Build();
 
+		// Setup JDownloader
 		var email = config.GetValue<string>("JDownloaderSettings:Email");
 		var password = config.GetValue<string>("JDownloaderSettings:Password");
 		var jdownloader = new JDownloaderHandler(email, password, "crawler");
 		var device = jdownloader.GetDeviceHandler(jdownloader.GetDevices().FirstOrDefault());
 		var grabber = device.LinkgrabberV2;
+		var downloader = device.DownloadsV2;
 
 		var extensionPath = config.GetValue<string>("SeleniumSettings:ExtensionPath");
 		var animeUrl = config.GetValue<string>("AnimeSettings:Url");
+		var animeName = config.GetValue<string>("AnimeSettings:AnimeName");
 		var switchSeason = config.GetValue<bool>("AnimeSettings:SwitchSeason");
 
 		Console.WriteLine($"Extension Path: {extensionPath}");
@@ -72,6 +76,58 @@ public class Scrapper
 
 		driver.Quit();
 
+		var pack = grabber.QueryPackages(new QueryPackagesRequest()).FirstOrDefault();
+		var list = grabber.QueryLinks(new QueryLinksRequest { PackageUuids = [pack.UUID] });
+		try
+		{
+			grabber.MoveToDownloadlist(list.Select(x => x.Id).ToArray(), [pack.UUID]);
+		}
+		catch
+		{
+		}
+
+		var saveTo = string.Empty;
+		while (true)
+		{
+			var downloadPack = downloader.QueryPackages(new LinkQueryRequest()).Where(x => x.Name == animeName)
+				.FirstOrDefault();
+			saveTo = downloadPack.SaveTo;
+			if (downloadPack.Finished)
+				break;
+			Thread.Sleep(1000);
+		}
+
+		var template = animeName + " S{0:D2}E{1:D2}";
+		var seasonStart = config.GetValue<int>("AnimeSettings:Season");
+		var episodeStart = config.GetValue<int>("AnimeSettings:Episode");
+
+		try
+		{
+			// Get all files in the directory
+			var files = Directory.GetFiles(saveTo);
+
+			foreach (var filePath in files)
+			{
+				// Get file name and extension
+				var fileName = Path.GetFileName(filePath);
+				var fileExtension = Path.GetExtension(filePath);
+
+				// Rename the file
+				var newFileName = string.Format(template, seasonStart, episodeStart) + fileExtension;
+				var newFilePath = Path.Combine(saveTo, newFileName);
+				File.Move(filePath, newFilePath);
+
+				// Output the old and new file names
+				Console.WriteLine($"Renamed: {fileName} -> {newFileName}");
+				episodeStart++;
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"An error occurred: {ex.Message}");
+		}
+
+		Console.WriteLine("Done!");
 		return;
 
 		ReadOnlyCollection<IWebElement> GetEpisodeLinks()
@@ -105,7 +161,7 @@ public class Scrapper
 				new AddLinkRequest
 				{
 					AutoExtract = true,
-					PackageName = config.GetValue<string>("AnimeSettings:AnimeName"),
+					PackageName = animeName,
 					Links = video
 				});
 
