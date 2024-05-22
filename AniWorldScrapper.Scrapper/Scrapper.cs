@@ -142,7 +142,11 @@ public class Scrapper
 
 		void GetVideoForEpisode()
 		{
-			var linkElement = driver.FindElements(By.CssSelector("[data-link-id] a"))[3];
+			var linkElement =
+				driver.FindElements(
+						By.CssSelector("[data-link-id]"))
+					.Where(x => x.FindElements(By.TagName("h4"))[0].Text == "Streamtape").ToList()[0]
+					.FindElement(By.TagName("a"));
 			var href = linkElement.GetAttribute("href");
 
 			((IJavaScriptExecutor)driver).ExecuteScript("window.open();");
