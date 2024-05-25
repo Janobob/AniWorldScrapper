@@ -42,6 +42,9 @@ public class Scrapper
 		options.AddExcludedArguments("excludeSwitches", "enable-logging");
 		var driver = new ChromeDriver(options);
 		driver.Url = animeUrl;
+		driver.Manage().Timeouts().PageLoad = TimeSpan.FromSeconds(300);
+		driver.Manage().Timeouts().AsynchronousJavaScript = TimeSpan.FromSeconds(300);
+		driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(300);
 
 		// Sleep to prevent ads
 		Thread.Sleep(1000);
