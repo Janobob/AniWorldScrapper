@@ -5,10 +5,11 @@ public class Renamer
 	public static void Main(string[] args)
 	{
 		// Directory containing files
-		const string directoryPath = @"\\192.168.1.176\Plex\downloads\DARLING in the FRANXX";
-		const string animeName = "DARLING in the FRANXX";
+		const string directoryPath =
+			@"\\192.168.1.176\tank\Downloads\One Piece (1999)18";
+		const string animeName = "One Piece (1999)";
 		const string template = animeName + " S{0:D2}E{1:D2}";
-		var season = 1;
+		var season = 19;
 		var episode = 1;
 
 		try

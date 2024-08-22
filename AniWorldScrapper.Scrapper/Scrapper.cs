@@ -40,7 +40,8 @@ public class Scrapper
 		var options = new ChromeOptions();
 		options.AddArgument($"load-extension={extensionPath}");
 		options.AddExcludedArguments("excludeSwitches", "enable-logging");
-		var driver = new ChromeDriver(options);
+		options.AddArgument("no-sandbox");
+		var driver = new ChromeDriver(ChromeDriverService.CreateDefaultService(), options, TimeSpan.FromSeconds(300));
 		driver.Url = animeUrl;
 		driver.Manage().Timeouts().PageLoad = TimeSpan.FromSeconds(300);
 		driver.Manage().Timeouts().AsynchronousJavaScript = TimeSpan.FromSeconds(300);
@@ -92,8 +93,8 @@ public class Scrapper
 		var saveTo = string.Empty;
 		while (true)
 		{
-			var downloadPack = downloader.QueryPackages(new LinkQueryRequest()).Where(x => x.Name == animeName)
-				.FirstOrDefault();
+			var downloadPack = downloader.QueryPackages(new LinkQueryRequest())
+				.FirstOrDefault(x => x.Name == animeName + activeSeason);
 			saveTo = downloadPack.SaveTo;
 			if (downloadPack.Finished)
 				break;
@@ -164,11 +165,12 @@ public class Scrapper
 			control.Click();
 			var video = driver.FindElement(By.TagName("video")).GetAttribute("src");
 			Console.WriteLine(video);
+			jdownloader.Reconnect();
 			grabber.AddLinks(
 				new AddLinkRequest
 				{
 					AutoExtract = true,
-					PackageName = animeName,
+					PackageName = animeName + activeSeason,
 					Links = video
 				});
 
