@@ -38,10 +38,10 @@ public class Scrapper
 
 		// Set up the Chrome driver
 		var options = new ChromeOptions();
+		options.BinaryLocation = "/usr/bin/brave-browser";
 		options.AddArgument($"load-extension={extensionPath}");
 		options.AddExcludedArguments("excludeSwitches", "enable-logging");
-		options.AddArgument("no-sandbox");
-		var driver = new ChromeDriver(ChromeDriverService.CreateDefaultService(), options, TimeSpan.FromSeconds(300));
+		var driver = new ChromeDriver(options);
 		driver.Url = animeUrl;
 		driver.Manage().Timeouts().PageLoad = TimeSpan.FromSeconds(300);
 		driver.Manage().Timeouts().AsynchronousJavaScript = TimeSpan.FromSeconds(300);
@@ -64,7 +64,7 @@ public class Scrapper
 			{
 				// Run
 				GetVideoForEpisode();
-
+				
 				// Get links
 				episodeLinks = GetEpisodeLinks();
 				episodeLinks[episode + 1].Click();
@@ -93,8 +93,8 @@ public class Scrapper
 		var saveTo = string.Empty;
 		while (true)
 		{
-			var downloadPack = downloader.QueryPackages(new LinkQueryRequest())
-				.FirstOrDefault(x => x.Name == animeName + activeSeason);
+			var downloadPack = downloader.QueryPackages(new LinkQueryRequest()).Where(x => x.Name == animeName)
+				.FirstOrDefault();
 			saveTo = downloadPack.SaveTo;
 			if (downloadPack.Finished)
 				break;
@@ -108,7 +108,7 @@ public class Scrapper
 		try
 		{
 			// Get all files in the directory
-			var files = Directory.GetFiles(saveTo);
+			var files = Directory.GetFiles(saveTo).OrderBy(x => x).ToArray();
 
 			foreach (var filePath in files)
 			{
@@ -147,8 +147,7 @@ public class Scrapper
 		void GetVideoForEpisode()
 		{
 			var linkElement =
-				driver.FindElements(
-						By.CssSelector("[data-link-id]"))
+				driver.FindElements(By.CssSelector("[data-link-id]"))
 					.Where(x => x.FindElements(By.TagName("h4"))[0].Text == "Streamtape").ToList()[0]
 					.FindElement(By.TagName("a"));
 			var href = linkElement.GetAttribute("href");
@@ -157,20 +156,23 @@ public class Scrapper
 			driver.SwitchTo().Window(driver.WindowHandles.Last());
 			driver.Navigate().GoToUrl(href);
 
-			Thread.Sleep(500);
+			Thread.Sleep(500); // Allow time for the page to load
 
-			driver.FindElement(By.TagName("body")).Click();
-			((IJavaScriptExecutor)driver).ExecuteScript("document.getElementsByClassName('play-overlay')[0].click();");
-			var control = driver.FindElement(By.ClassName("plyr__control"));
-			control.Click();
+			// Remove the overlay using JavaScript
+			((IJavaScriptExecutor)driver).ExecuteScript("document.querySelector('.play-overlay').style.display='none';");
+
+			var container = driver.FindElement(By.ClassName("plyr-container"));
+			container.Click();
+			Thread.Sleep(500);
+			
 			var video = driver.FindElement(By.TagName("video")).GetAttribute("src");
 			Console.WriteLine(video);
-			jdownloader.Reconnect();
+    
 			grabber.AddLinks(
 				new AddLinkRequest
 				{
 					AutoExtract = true,
-					PackageName = animeName + activeSeason,
+					PackageName = animeName,
 					Links = video
 				});
 
